@@ -1,0 +1,17 @@
+{
+  "name": "presswork-excel-to-pdf",
+  "version": "1.0.0",
+  "description": "Excel to PDF converter using LibreOffice headless conversion, accessible from any device via the browser.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
