@@ -6,11 +6,14 @@ Unlike a plain LibreOffice conversion, this version **always produces a
 proper-looking table** regardless of what formatting the original file had:
 
 1. A small Python step (`prepare.py`, using `openpyxl`) opens the file and:
+<<<<<<< HEAD
    - detects the real boundaries of your data and **deletes any empty
      trailing or leading rows/columns** outside them (a common Excel
      artifact — formatting applied far beyond the actual table makes the
      "used range" much bigger than the real data, which is what causes
      extra blank pages when printed)
+=======
+>>>>>>> 3d4cafc43ce1987aa97b4da38fbbe6f7845c4cab
    - draws real borders around every used cell (so gridlines always show)
    - bolds and shades the header row
    - sets the page to fit all columns on one page width, letting rows flow
@@ -18,9 +21,15 @@ proper-looking table** regardless of what formatting the original file had:
    - repeats the header row on every printed page
 2. LibreOffice then exports that styled workbook to PDF.
 
+<<<<<<< HEAD
 This fixes both classic problems: a wide spreadsheet getting split into
 separate "column groups" that print as unrelated pages, and stray blank
 pages caused by empty rows/columns that Excel still considered "used."
+=======
+This fixes the classic problem where a wide spreadsheet gets split into
+separate "column groups" that print as unrelated pages — everything is now
+forced to fit one page's width first.
+>>>>>>> 3d4cafc43ce1987aa97b4da38fbbe6f7845c4cab
 
 ## What's included
 

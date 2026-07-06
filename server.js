@@ -21,7 +21,11 @@ const SOFFICE_BIN = process.env.SOFFICE_PATH || 'soffice';
 // Path to Python 3. Override with PYTHON_PATH if needed.
 const PYTHON_BIN = process.env.PYTHON_PATH || 'python3';
 
+<<<<<<< HEAD
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+=======
+const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150 MB
+>>>>>>> 3d4cafc43ce1987aa97b4da38fbbe6f7845c4cab
 const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.xlsm', '.csv', '.ods'];
 const OPENPYXL_NATIVE = ['.xlsx', '.xlsm']; // formats openpyxl can open directly
 const PREPARE_SCRIPT = path.join(__dirname, 'prepare.py');
