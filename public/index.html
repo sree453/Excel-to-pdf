@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presswork — Excel to PDF, exactly as printed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F4F7F5;
+    --paper-dim: #E8EFEA;
+    --ink: #1B2A22;
+    --ink-soft: #51655A;
+    --line: #C9D8CE;
+    --stamp: #2F7D5C;
+    --stamp-dim: #DCEAE1;
+    --ok: #2F7D5C;
+    --err: #B3261E;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:0 24px 80px; }
+
+  header{ padding:56px 0 40px; border-bottom:1px solid var(--line); margin-bottom:48px; }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--stamp); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow::before{ content:""; width:8px;height:8px; background:var(--stamp); border-radius:50%; display:inline-block; }
+  h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:clamp(34px,5.5vw,56px);
+    line-height:1.05; margin:0 0 18px; letter-spacing:-0.01em;
+  }
+  h1 em{ font-style:italic; color:var(--stamp); }
+  .sub{ font-size:17px; color:var(--ink-soft); max-width:58ch; line-height:1.55; margin:0; }
+  .sub b{ color:var(--ink); font-weight:600; }
+
+  .dropzone{
+    position:relative; border:1.5px dashed var(--line); border-radius:var(--radius);
+    background:#fff; padding:48px 24px; text-align:center; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone:hover, .dropzone.drag{ border-color:var(--stamp); background:#fbfefc; }
+  .dropzone:focus-visible{ outline:2px solid var(--stamp); outline-offset:3px; }
+  .dz-icon{ width:52px;height:52px; margin:0 auto 18px; display:flex;align-items:center;justify-content:center; }
+  .dz-title{ font-family:'Fraunces',serif; font-size:21px; font-weight:500; margin:0 0 6px; }
+  .dz-hint{ font-size:14px; color:var(--ink-soft); margin:0; }
+  .dz-hint code{ font-family:'JetBrains Mono',monospace; background:var(--stamp-dim); padding:1px 6px; border-radius:2px; font-size:12.5px; }
+  input[type=file]{ display:none; }
+
+  .ticket{ margin-top:28px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; display:none; }
+  .ticket.show{ display:block; }
+  .ticket-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 20px; border-bottom:1px dashed var(--line); }
+  .ticket-row:last-child{ border-bottom:none; }
+  .t-file{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .t-file-icon{
+    width:34px;height:34px;flex-shrink:0; background:var(--paper-dim); border-radius:2px;
+    display:flex;align-items:center;justify-content:center; font-family:'JetBrains Mono',monospace;
+    font-size:9px; font-weight:600; color:var(--ink-soft);
+  }
+  .t-file-name{ font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .t-file-meta{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft); }
+  .t-remove{
+    background:none;border:none; color:var(--ink-soft); font-size:13px; cursor:pointer;
+    font-family:'JetBrains Mono',monospace; text-decoration:underline; flex-shrink:0;
+  }
+  .t-remove:hover{ color:var(--stamp); }
+
+  .status-line{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:10px; }
+  .status-dot{ width:7px;height:7px;border-radius:50%; background:var(--line); flex-shrink:0; }
+  .status-dot.active{ background:#D9A441; animation:pulse 1s infinite ease-in-out; }
+  .status-dot.done{ background:var(--ok); animation:none; }
+  .status-dot.error{ background:var(--err); animation:none; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+  .actions{ padding:18px 20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  button.primary{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; background:var(--stamp);
+    color:#fff; border:none; padding:12px 22px; border-radius:2px; cursor:pointer;
+    transition:transform .1s ease, background .15s ease;
+  }
+  button.primary:hover{ background:#256546; }
+  button.primary:active{ transform:scale(0.98); }
+  button.primary:disabled{ background:var(--line); cursor:not-allowed; }
+  button.primary:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+  .quiet-note{ font-size:12.5px; color:var(--ink-soft); }
+
+  .preview-section{ margin-top:52px; }
+  .preview-label{
+    font-family:'JetBrains Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--ink-soft); margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .preview-label::after{ content:""; flex:1; height:1px; background:var(--line); }
+  .page-shell{
+    background:var(--paper-dim); border:1px solid var(--line);
+    box-shadow:0 18px 40px -24px rgba(27,42,34,0.25); min-height:200px;
+  }
+  #pdfFrame{ width:100%; height:680px; border:none; display:none; background:#fff; }
+  .empty-preview{ padding:80px 24px; text-align:center; color:var(--ink-soft); font-size:14px; }
+
+  .foot-note{
+    margin-top:64px; padding-top:24px; border-top:1px solid var(--line); font-size:13px;
+    color:var(--ink-soft); display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .foot-note b{ color:var(--ink); }
+
+  @media (max-width:600px){
+    header{ padding:40px 0 28px; }
+    .dropzone{ padding:36px 16px; }
+    .ticket-row{ flex-wrap:wrap; }
+    #pdfFrame{ height:480px; }
+  }
+  @media (prefers-reduced-motion: reduce){ .status-dot.active{ animation:none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Converted by LibreOffice, on the server</div>
+    <h1>Turn a spreadsheet<br>into a proper <em>table</em>.</h1>
+    <p class="sub">Drop an <b>.xlsx</b> file below. The server adds real gridlines, a bold header row, and fits every column to one page width before exporting — so it always comes out looking like a table, even if the original file had no print formatting at all. Works from any phone, tablet, or computer.</p>
+  </header>
+
+  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose or drop a spreadsheet">
+    <div class="dz-icon">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <rect x="10" y="6" width="26" height="34" rx="2" stroke="#1B2A22" stroke-width="1.6"/>
+        <path d="M30 6v8h8" stroke="#1B2A22" stroke-width="1.6" stroke-linejoin="round"/>
+        <line x1="16" y1="20" x2="30" y2="20" stroke="#2F7D5C" stroke-width="1.6"/>
+        <line x1="16" y1="25" x2="30" y2="25" stroke="#2F7D5C" stroke-width="1.6"/>
+        <line x1="16" y1="30" x2="30" y2="30" stroke="#2F7D5C" stroke-width="1.6"/>
+        <line x1="21" y1="16" x2="21" y2="34" stroke="#2F7D5C" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <p class="dz-title">Drop your spreadsheet here</p>
+    <p class="dz-hint">or tap to browse — accepts <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code>, <code>.ods</code>, up to 25 MB</p>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv,.ods">
+  </div>
+
+  <div class="ticket" id="ticket">
+    <div class="ticket-row">
+      <div class="t-file">
+        <div class="t-file-icon">XLS</div>
+        <div style="min-width:0;">
+          <div class="t-file-name" id="fileName">—</div>
+          <div class="t-file-meta" id="fileMeta">—</div>
+        </div>
+      </div>
+      <button class="t-remove" id="removeFile">remove</button>
+    </div>
+    <div class="ticket-row">
+      <div class="status-line">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">ready to convert</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="convertBtn">Convert & download PDF</button>
+      <span class="quiet-note" id="quietNote">Sends the file to the server for conversion.</span>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <div class="preview-label">Result</div>
+    <div class="page-shell">
+      <div class="empty-preview" id="emptyPreview">Your converted PDF will appear here once conversion finishes.</div>
+      <iframe id="pdfFrame" title="Converted PDF preview"></iframe>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <span><b>Presswork</b> — server-side conversion via LibreOffice + auto table styling.</span>
+    <span>Empty trailing/leading rows and columns are trimmed automatically before printing.</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const ticket = document.getElementById('ticket');
+  const fileName = document.getElementById('fileName');
+  const fileMeta = document.getElementById('fileMeta');
+  const removeFile = document.getElementById('removeFile');
+  const statusText = document.getElementById('statusText');
+  const statusDot = document.getElementById('statusDot');
+  const convertBtn = document.getElementById('convertBtn');
+  const quietNote = document.getElementById('quietNote');
+  const pdfFrame = document.getElementById('pdfFrame');
+  const emptyPreview = document.getElementById('emptyPreview');
+
+  const ACCEPTED = ['.xlsx', '.xls', '.xlsm', '.csv', '.ods'];
+
+  let currentFile = null;
+  let lastObjectUrl = null;
+
+  function formatBytes(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(2) + ' MB';
+  }
+
+  function hasAcceptedExtension(name){
+    const lower = name.toLowerCase();
+    return ACCEPTED.some(ext => lower.endsWith(ext));
+  }
+
+  function resetPreview(){
+    if(lastObjectUrl){ URL.revokeObjectURL(lastObjectUrl); lastObjectUrl = null; }
+    pdfFrame.style.display = 'none';
+    pdfFrame.src = '';
+    emptyPreview.style.display = 'block';
+    emptyPreview.textContent = 'Your converted PDF will appear here once conversion finishes.';
+  }
+
+  function resetState(){
+    currentFile = null;
+    fileInput.value = '';
+    ticket.classList.remove('show');
+    resetPreview();
+  }
+
+  function handleFile(file){
+    if(!file) return;
+    if(!hasAcceptedExtension(file.name)){
+      alert('Please choose a spreadsheet file: .xlsx, .xls, .xlsm, .csv, or .ods');
+      return;
+    }
+    currentFile = file;
+    ticket.classList.add('show');
+    fileName.textContent = file.name;
+    fileMeta.textContent = formatBytes(file.size) + ' · Spreadsheet';
+    statusText.textContent = 'ready to convert';
+    statusDot.className = 'status-dot';
+    convertBtn.disabled = false;
+    quietNote.textContent = 'Sends the file to the server for conversion.';
+    resetPreview();
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+  });
+  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  ['dragenter','dragover'].forEach(evt=>{
+    dropzone.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, (e)=>{ e.preventDefault(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', (e)=>{ handleFile(e.dataTransfer.files[0]); });
+
+  removeFile.addEventListener('click', (e)=>{ e.stopPropagation(); resetState(); });
+
+  convertBtn.addEventListener('click', async ()=>{
+    if(!currentFile) return;
+    const originalLabel = convertBtn.textContent;
+    convertBtn.disabled = true;
+    convertBtn.textContent = 'Converting…';
+    statusText.textContent = 'uploading and converting…';
+    statusDot.className = 'status-dot active';
+    quietNote.textContent = 'LibreOffice is rendering the spreadsheet on the server.';
+    resetPreview();
+    emptyPreview.textContent = 'Converting…';
+
+    try{
+      const formData = new FormData();
+      formData.append('file', currentFile);
+
+      const response = await fetch('/convert', { method: 'POST', body: formData });
+
+      if(!response.ok){
+        let message = 'Conversion failed.';
+        try{
+          const errJson = await response.json();
+          if(errJson && errJson.error) message = errJson.error;
+        }catch(_e){}
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      lastObjectUrl = URL.createObjectURL(blob);
+
+      pdfFrame.src = lastObjectUrl;
+      pdfFrame.style.display = 'block';
+      emptyPreview.style.display = 'none';
+
+      const downloadName = currentFile.name.replace(/\.[^.]+$/i, '.pdf');
+      const a = document.createElement('a');
+      a.href = lastObjectUrl;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      statusText.textContent = 'PDF downloaded';
+      statusDot.className = 'status-dot done';
+      quietNote.textContent = 'Done — check your downloads folder.';
+    }catch(err){
+      console.error(err);
+      statusText.textContent = err.message || 'conversion failed';
+      statusDot.className = 'status-dot error';
+      emptyPreview.style.display = 'block';
+      emptyPreview.textContent = 'Something went wrong: ' + (err.message || 'unknown error');
+      quietNote.textContent = 'Try again, or check the server is running.';
+    }finally{
+      convertBtn.textContent = originalLabel;
+      convertBtn.disabled = false;
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
